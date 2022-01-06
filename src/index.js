@@ -8,12 +8,18 @@ global.fetch = require("node-fetch");
 global.appRoot = path.resolve(__dirname);
 global.publicFolder = path.join(process.cwd(), "/public");
 
+import userRoutes from "./routes/user.route";
+import tagRoutes from "./routes/tag.route";
+
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use(express.static(process.cwd() + "/public"));
+
+app.use("/user", userRoutes);
+app.use("/tag", tagRoutes);
 
 mongoose
 	.connect(process.env.MONGODB_CONNECTION_STRING, {
