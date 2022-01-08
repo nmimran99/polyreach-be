@@ -16,17 +16,12 @@ const userSchema = new Schema(
 		info: {
 			firstName: { type: String, default: null },
 			lastName: { type: String, default: null },
-		},
-		location: {
-			country: { type: String, default: null },
-			province: { type: String, default: null },
-			state: { type: String, default: null },
-			city: { type: String, default: null },
+			location: { type: String, default: null },
 		},
 		data: {
 			company: { type: String, default: null },
-			profession: { type: String, default: null },
-			subjects: { type: [String], default: [] },
+			occupation: { type: String, default: null },
+			interests: { type: [String], default: [] },
 			introduction: { type: String, default: null },
 		},
 		status: {
@@ -35,6 +30,7 @@ const userSchema = new Schema(
 		},
 		flags: {
 			changePasswordOnFirstLogin: { type: Boolean, default: false },
+			isVerified: Boolean,
 		},
 	},
 	{

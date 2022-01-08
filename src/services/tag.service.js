@@ -17,7 +17,7 @@ export const createTag = async (req, res) => {
 export const getTags = async (req, res) => {
 	try {
 		const tags = await Tag.find({});
-		res.status(200).send(tags);
+		res.status(200).send({ tags: tags.map((t) => t.name) });
 		return;
 	} catch {
 		console.log(e.message);

@@ -4,14 +4,15 @@ require("dotenv").config();
 import express from "express";
 import mongoose from "mongoose";
 import path from "path";
-global.fetch = require("node-fetch");
 global.appRoot = path.resolve(__dirname);
 global.publicFolder = path.join(process.cwd(), "/public");
 
 import userRoutes from "./routes/user.route";
 import tagRoutes from "./routes/tag.route";
+import servicesRoutes from "./routes/services.route";
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -20,6 +21,7 @@ app.use(express.static(process.cwd() + "/public"));
 
 app.use("/user", userRoutes);
 app.use("/tag", tagRoutes);
+app.use("/services", servicesRoutes);
 
 mongoose
 	.connect(process.env.MONGODB_CONNECTION_STRING, {

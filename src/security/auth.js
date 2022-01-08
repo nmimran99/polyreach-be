@@ -95,6 +95,72 @@ export const reAuthUser = async (req, res) => {
 	});
 };
 
+export const generateVerificationCode = async (user) => {
+	const payload = {
+		userId: user._id,
+		email: user.email,
+		time: new Date(),
+	};
+
+	var vCode = jwt.sign(payload, process.env.JWT_SECRET, {
+		expiresIn: "24h",
+	});
+
+	return vCode;
+};
+
+export const verifyUserCode = async (req, res) => {
+	const { vCode } = req.body;
+	let userId, email;
+
+	try {
+		const payload = await jwt_decode(vCode);
+		userId = payload.userId;
+		email = payload.email;
+	} catch (e) {
+		res.status(400).send({ verified: false, message: "Token invalid" });
+		return;
+	}
+
+	return jwt.verify(vCode, process.env.JWT_SECRET, async (err) => {
+		if (err) {
+			if (err.message === "invalid token") {
+				res.status(400).send({ verified: false, messgae: "invalid token" });
+				return;
+			}
+
+			if (err.message === "jwt expired") {
+				res.status(400).send({ verified: false, messgae: err.message });
+				return;
+			}
+		}
+
+		const user = await User.find({ _id: userId, email: email });
+		if (!user) {
+			res
+				.status(401)
+				.send({ verified: false, message: "User not linked to Email" });
+			return;
+		}
+
+		const updatedUser = await User.findOneAndUpdate(
+			{ _id: userId },
+			{ "flags.isVerified": true },
+			{ useFindOneAndModify: false, new: true }
+		);
+		if (!updatedUser) {
+			res
+				.status(500)
+				.send({ verified: false, message: "Could not update user" });
+			return;
+		}
+		res
+			.status(200)
+			.send({ verified: true, data: "User verified successfully" });
+		return;
+	});
+};
+
 export const generateAccessToken = async (userId) => {
 	const refreshToken = randtoken.uid(256);
 	const refreshTokenHash = await bcrypt.hash(refreshToken, 10);

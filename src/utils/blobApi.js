@@ -3,11 +3,13 @@ import { createURL, removeFileByPath } from "./generic";
 
 export const uploadFilesToBlob = async (files, container) => {
 	if (!files.length) return [];
+
 	const blobServiceClient = BlobServiceClient.fromConnectionString(
 		process.env.BLOB_CONNECTION_STRING
 	);
 	const containerClient = blobServiceClient.getContainerClient(container);
 	let promises = [];
+
 	for await (const file of files) {
 		const blobName =
 			container.slice(0, -1) + "_" + new Date().getTime() + "_" + file.filename;
@@ -17,7 +19,6 @@ export const uploadFilesToBlob = async (files, container) => {
 		await removeFileByPath(file.path);
 		promises.push(createURL(`${container}/${blobName}`));
 	}
-
 	return Promise.all(promises);
 };
 
