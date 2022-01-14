@@ -194,3 +194,13 @@ export const signPayload = async (payload) => {
 	var token = jwt.sign(payload, process.env.JWT_SECRET);
 	return token;
 };
+
+export const getTokenPayload = async (token) => {
+	try {
+		const payload = await jwt_decode(token);
+		return payload;
+	} catch (e) {
+		console.log(e.message);
+		return false;
+	}
+};

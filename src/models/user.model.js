@@ -32,6 +32,7 @@ const userSchema = new Schema(
 			changePasswordOnFirstLogin: { type: Boolean, default: false },
 			isVerified: Boolean,
 		},
+		socketId: String,
 	},
 	{
 		timestamps: true,

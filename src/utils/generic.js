@@ -38,3 +38,11 @@ export const removeDuplicateObjectIds = (inputArray) => {
 export const createURL = async (fileName) => {
 	return `${process.env.BLOB_IMAGES_URL}/${fileName}`;
 };
+
+export const getRoomId = (participants) => {
+	return participants.join("@@");
+};
+
+export const getRoomParticipants = (roomId) => {
+	return roomId.split("@@");
+};

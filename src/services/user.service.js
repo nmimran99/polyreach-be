@@ -5,9 +5,11 @@ import sgMail from "@sendgrid/mail";
 import {
 	generateAccessToken,
 	generateVerificationCode,
+	getTokenPayload,
 } from "../security/auth";
 import jwt_decode from "jwt-decode";
 import jwt from "jsonwebtoken";
+import Connection from "../models/connection.model";
 
 sgMail.setApiKey(
 	"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"
@@ -82,13 +84,17 @@ export const createUser = async (req, res) => {
 		});
 
 		const savedUser = await user.save();
-		if (savedUser) {
-			const vCode = await generateVerificationCode(savedUser);
-			sendConfirmationEmail(user, vCode);
-			res.status(201).send({ user: savedUser, token: token });
-			return;
-		}
-		res.status(500).send({ error: "User did not write to database." });
+
+		if (!savedUser)
+			res.status(500).send({ error: "User did not write to database." });
+
+		const connection = new Connection({ user: savedUser._id, following: [] });
+		await connection.save();
+
+		const vCode = await generateVerificationCode(savedUser);
+		sendConfirmationEmail(user, vCode);
+		res.status(201).send({ user: savedUser, token: token });
+		return;
 	} catch (e) {
 		console.log(e.message);
 		res.status(500).send({ error: e.message });
@@ -213,4 +219,72 @@ export const resetPassword = async (req, res) => {
 		res.status(500).send(false);
 		return;
 	});
+};
+
+export const getActiveUsers = async (req, res) => {
+	try {
+		const users = await User.find(
+			{
+				"status.status": { $ne: "inactive" },
+				_id: { $ne: req.query.userId },
+				socketId: { $ne: null },
+			},
+			"avatar email info data status flags socketId"
+		);
+		if (users) {
+			res.status(200).send({ users });
+			return;
+		}
+		res.status(200).send(null);
+	} catch (e) {
+		console.log(e.message);
+		res.status(500).send({ message: e.message });
+	}
+};
+
+export const updateUserStatus = async (req, res) => {
+	const { userId, status, maxConversationLength } = req.body;
+
+	try {
+		const updated = await User.findOneAndUpdate(
+			{ _id: userId },
+			{ status: { status, maxConversationLength } },
+			{ useFindOneAndModify: false, new: true }
+		);
+		if (updated) {
+			res.status(200).send({ user: updated });
+			return;
+		}
+		throw "No update";
+	} catch (e) {
+		console.log(e.message);
+		res.status(500).send({ message: e.message });
+	}
+};
+
+export const getSocketId = async (req, res) => {
+	try {
+		const user = await User.findOne({ _id: req.query.userId });
+		if (user) {
+			res.status(200).send({ socketId: user.socketId });
+			return;
+		}
+		res.status(200).send(false);
+	} catch (e) {
+		console.log(e.message);
+		res.status(500).send({ message: e.message });
+	}
+};
+
+export const getUserStatus = async (userId) => {
+	try {
+		const user = await User.findOne({ _id: userId }, "status");
+		if (user) {
+			return user.status;
+		}
+		return false;
+	} catch (e) {
+		console.log(e.message);
+		return false;
+	}
 };
