@@ -11,7 +11,11 @@ export const authenticate = async (req, res) => {
 	}
 
 	try {
-		const user = await User.findOne({ email });
+		let user = await User.findOneAndUpdate(
+			{ email },
+			{ "status.status": "Active" },
+			{ new: true }
+		);
 		if (!user) {
 			res.status(401).send({ message: "Invalid user or password" });
 			return;
@@ -51,7 +55,11 @@ export const reAuthUser = async (req, res) => {
 	} catch (e) {
 		res.status(400).send({ messgae: "Could not decode token" });
 	}
-	const user = await User.findOne({ _id: decodedToken.id });
+	const user = await User.findOneAndUpdate(
+		{ _id: decodedToken.id },
+		{ "status.status": "Active" },
+		{ new: true }
+	);
 	return jwt.verify(token, process.env.JWT_SECRET, async (err) => {
 		if (!user) {
 			res.status(400).send({ message: "User not linked to token" });

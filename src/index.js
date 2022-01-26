@@ -6,17 +6,17 @@ import mongoose from "mongoose";
 import path from "path";
 import { Server } from "socket.io";
 import User from "./models/user.model";
+import notificationRoutes from "./routes/notification.route";
+import chRoutes from "./routes/callHistory.route";
+import connectionRoutes from "./routes/connection.route";
 import servicesRoutes from "./routes/services.route";
 import tagRoutes from "./routes/tag.route";
 import userRoutes from "./routes/user.route";
-import connectionRoutes from "./routes/connection.route";
-import chRoutes from "./routes/callHistory.route";
 import {
-	createCallHistoryRow,
 	updateCallEnded,
 	updateCallStatus,
 } from "./services/callHistory.service";
-import { getUserStatus } from "./services/user.service";
+import { createNotification } from "./services/notification.service";
 import { getRoomId, getRoomParticipants } from "./utils/generic";
 require("dotenv").config();
 global.appRoot = path.resolve(__dirname);
@@ -35,6 +35,7 @@ app.use("/tag", tagRoutes);
 app.use("/services", servicesRoutes);
 app.use("/ch", chRoutes);
 app.use("/conn", connectionRoutes);
+app.use("/notification", notificationRoutes);
 
 const server = createServer(app);
 const io = new Server(server, {
@@ -48,18 +49,26 @@ io.sockets.on("connection", async (socket) => {
 
 	socket.on("userId", async (userId) => {
 		userIdentifier = userId;
-		await User.findOneAndUpdate({ _id: userId }, { socketId: socket.id });
+		await User.findOneAndUpdate(
+			{ _id: userId },
+			{ videoSocket: socket.id, "status.online": true }
+		);
 		socket.emit("socketid", { socketId: socket.id });
 	});
 
-	socket.on("diconnect", async () => {
-		await User.findOneAndUpdate({ _id: userIdentifier }, { socketId: null });
-		socket.broadcast.emit("userdiconnected", socket.id);
+	socket.on("disconnect", async () => {
+		let u = await User.findOneAndUpdate(
+			{ _id: userIdentifier },
+			{ "status.online": false },
+			{ new: true }
+		);
+		socket.broadcast.emit("userdisconnected", { user: u, status: u?.status });
 	});
 
 	socket.on(
 		"calluser",
 		({ to_sid, signalData, from_sid, from_user, callData }) => {
+			console.log(to_sid);
 			const roomId = getRoomId([from_sid, to_sid]);
 			socket.join(roomId);
 			io.to(to_sid).emit("calluser", {
@@ -112,6 +121,17 @@ io.sockets.on("connection", async (socket) => {
 		const { status } = user;
 		if (!status) return;
 		socket.broadcast.emit("statuschanged", { userId: user._id, status });
+	});
+
+	socket.on("notify-following", async ({ userId }) => {
+		const notifyTo = await User.findOne({ _id: userId });
+		const notification = await createNotification({
+			user: userId,
+			actionType: "startedFollowing",
+			actionBy: userIdentifier,
+			data: null,
+		});
+		io.to(notifyTo.videoSocket).emit("started-following", { notification });
 	});
 });
 

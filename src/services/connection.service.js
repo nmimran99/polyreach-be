@@ -11,7 +11,7 @@ export const addConnection = async (req, res) => {
 		).populate({
 			path: "following",
 			model: "User",
-			select: "email data info status avatar",
+			select: "email data info status avatar messageSocket videoSocket",
 		});
 
 		if (!updated) {
@@ -36,7 +36,7 @@ export const removeConnection = async (req, res) => {
 		).populate({
 			path: "following",
 			model: "User",
-			select: "email data info status avatar",
+			select: "email data info status avatar messageSocket videoSocket",
 		});
 
 		if (!updated) {
@@ -57,7 +57,7 @@ export const getConnections = async (req, res) => {
 		let connection = await Connection.findOne({ user: userId }).populate({
 			path: "following",
 			model: "User",
-			select: "email data info status avatar",
+			select: "email data info status avatar messageSocket videoSocket",
 		});
 
 		if (!connection) {

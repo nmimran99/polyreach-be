@@ -9,6 +9,7 @@ import {
 	getActiveUsers,
 	updateUserStatus,
 	getSocketId,
+	getUserList,
 } from "../services/user.service";
 import { uploadAvatar } from "../utils/multer";
 
@@ -17,6 +18,7 @@ const router = Router();
 router.get("/emailExists", checkEmailExists);
 router.get("/activeUsers", getActiveUsers);
 router.get("/getSocketId", getSocketId);
+router.get("/userList", getUserList);
 
 router.post("/", uploadAvatar.single("avatar"), createUser);
 router.post("/authenticate", authenticate);

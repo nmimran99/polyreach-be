@@ -1,15 +1,12 @@
-import bcryptjs from "bcryptjs";
-import User from "../models/user.model";
-import { uploadFilesToBlob } from "../utils/blobApi";
 import sgMail from "@sendgrid/mail";
-import {
-	generateAccessToken,
-	generateVerificationCode,
-	getTokenPayload,
-} from "../security/auth";
-import jwt_decode from "jwt-decode";
+import bcryptjs from "bcryptjs";
 import jwt from "jsonwebtoken";
+import jwt_decode from "jwt-decode";
 import Connection from "../models/connection.model";
+import User from "../models/user.model";
+import { generateVerificationCode } from "../security/auth";
+import { uploadFilesToBlob } from "../utils/blobApi";
+import mongoose from "mongoose";
 
 sgMail.setApiKey(
 	"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"
@@ -77,6 +74,8 @@ export const createUser = async (req, res) => {
 				status: "available",
 				maxConversationLength: 0,
 			},
+			messageSocket: "",
+			videoSocket: "",
 			flags: {
 				changePasswordOnFirstLogin: true,
 				isVerified: false,
@@ -222,15 +221,17 @@ export const resetPassword = async (req, res) => {
 };
 
 export const getActiveUsers = async (req, res) => {
+	const { userId, page } = req.query;
 	try {
 		const users = await User.find(
 			{
-				"status.status": { $ne: "inactive" },
-				_id: { $ne: req.query.userId },
-				socketId: { $ne: null },
+				"status.online": true,
+				_id: { $ne: userId },
 			},
-			"avatar email info data status flags socketId"
-		);
+			"avatar email info data status flags messageSocket videoSocket"
+		)
+			.limit(10)
+			.skip(page * 10);
 		if (users) {
 			res.status(200).send({ users });
 			return;
@@ -248,7 +249,7 @@ export const updateUserStatus = async (req, res) => {
 	try {
 		const updated = await User.findOneAndUpdate(
 			{ _id: userId },
-			{ status: { status, maxConversationLength } },
+			{ status: { status, maxConversationLength, online: true } },
 			{ useFindOneAndModify: false, new: true }
 		);
 		if (updated) {
@@ -266,7 +267,7 @@ export const getSocketId = async (req, res) => {
 	try {
 		const user = await User.findOne({ _id: req.query.userId });
 		if (user) {
-			res.status(200).send({ socketId: user.socketId });
+			res.status(200).send({ socketId: user.videoSocket });
 			return;
 		}
 		res.status(200).send(false);
@@ -286,5 +287,52 @@ export const getUserStatus = async (userId) => {
 	} catch (e) {
 		console.log(e.message);
 		return false;
+	}
+};
+
+export const getUserList = async (req, res) => {
+	const { page, searchText, userId } = req.query;
+
+	try {
+		const users = await User.aggregate([
+			{
+				$addFields: {
+					fullName: {
+						$concat: ["$info.firstName", " ", "$info.lastName"],
+					},
+				},
+			},
+			{
+				$match: {
+					fullName: {
+						$regex: searchText.toLowerCase(),
+					},
+					_id: { $ne: mongoose.Types.ObjectId(userId) },
+				},
+			},
+			{ $limit: 10 },
+			{ $skip: page * 10 },
+		]);
+
+		res.status(200).send({ users });
+		return;
+	} catch (e) {
+		console.log(e.message);
+		res.status(500).send([]);
+	}
+};
+
+export const checkUserId = async (req, res) => {
+	const { userId } = req.query;
+
+	try {
+		const user = await User.findOne({ _id: userId });
+		if (user) {
+			res.status(200).send(true);
+			return;
+		}
+		res.status(200).send(false);
+	} catch (e) {
+		res.status(500).send(false);
 	}
 };

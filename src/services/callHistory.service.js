@@ -63,12 +63,12 @@ export const getCallHistory = async (req, res) => {
 				{
 					path: "to",
 					model: "User",
-					select: "avatar email info status ",
+					select: "avatar email info status messageSocket videoSocket",
 				},
 				{
 					path: "from",
 					model: "User",
-					select: "avatar email info status ",
+					select: "avatar email info status messageSocket videoSocket",
 				},
 			])
 			.limit(10)

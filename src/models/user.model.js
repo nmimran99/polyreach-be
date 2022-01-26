@@ -25,14 +25,16 @@ const userSchema = new Schema(
 			introduction: { type: String, default: null },
 		},
 		status: {
-			status: { type: String, default: "available" },
+			status: { type: String, default: "Active" },
 			maxConversationLength: { type: Number, default: 0 },
+			online: { type: Boolean, default: false },
 		},
 		flags: {
 			changePasswordOnFirstLogin: { type: Boolean, default: false },
 			isVerified: Boolean,
 		},
-		socketId: String,
+		videoSocket: { type: String, default: null },
+		messageSocket: { type: String, default: null },
 	},
 	{
 		timestamps: true,
